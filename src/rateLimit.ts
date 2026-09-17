@@ -16,7 +16,19 @@ type Finestra = { count: number; resetAt: number };
  * vero in multi-istanza serve uno store condiviso (Redis), che è un servizio in più da gestire.
  * Scritto qui perché chi lo monta lo sappia, invece di scoprirlo scalando.
  */
-export const createRateLimit = (limit: number, windowMs: number) => {
+export type RateLimitOptions = {
+  /** Ampiezza della finestra in millisecondi. */
+  readonly windowMs: number;
+  /** Richieste consentite per client dentro la finestra. */
+  readonly max: number;
+};
+
+/*
+ * Opzioni con nome e non due numeri posizionali: `createRateLimit(60, 60_000)` e
+ * `createRateLimit(60_000, 60)` compilano entrambe e significano l'opposto — un limite di 60 al
+ * minuto contro uno di 60.000 ogni 60ms. Le due firme convivevano davvero nei servizi.
+ */
+export const createRateLimit = ({ windowMs, max }: RateLimitOptions) => {
   const finestre = new Map<string, Finestra>();
 
   return (req: Request, res: Response, next: NextFunction) => {
@@ -39,7 +51,7 @@ export const createRateLimit = (limit: number, windowMs: number) => {
         .forEach(([voce]) => finestre.delete(voce));
     }
 
-    if (finestra.count > limit) {
+    if (finestra.count > max) {
       return res
         .status(429)
         .set("Retry-After", String(Math.ceil((finestra.resetAt - adesso) / 1000)))

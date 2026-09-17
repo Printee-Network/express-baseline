@@ -18,6 +18,7 @@ export type { BaselineApp, BaselineOptions } from "./createBaselineApp";
 export { corsAllowlist } from "./cors";
 export { healthRouter } from "./health";
 export { createRateLimit } from "./rateLimit";
+export type { RateLimitOptions } from "./rateLimit";
 export { regoleComuni, verificaAvvio } from "./bootGuard";
 export type { RegolaAvvio } from "./bootGuard";
 export { consoleLogger } from "./logger";

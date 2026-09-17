@@ -35,10 +35,15 @@ const { app, listen } = createBaselineApp({
   port: 5100,
   corsAllowedOrigins: config.corsAllowedOrigins, // vuoto = nessuna origin browser
   bodyLimit: "256kb",                            // default 64kb
+  publicCorsPaths: ["/public"],                  // pubblici per natura, fuori dall'allowlist
   logger,                                        // il winston del servizio
 });
 
-app.use("/catalogs", createRateLimit(60, 60_000), catalogRouter);
+// ...tutte le rotte...
+
+listen(); // dopo le rotte, mai all'import
+
+app.use("/catalogs", createRateLimit({ max: 60, windowMs: 60_000 }), catalogRouter);
 
 listen();
 ```
@@ -85,7 +90,17 @@ subito — un upload legittimo fallisce e lo si alza consapevolmente — invece 
 nota mai.
 
 **`listen()` è esplicito e non parte all'import.** Il servizio decide quando è pronto: dopo aver
-caricato le chiavi, connesso il database, montato le rotte.
+caricato le chiavi, connesso il database, montato le rotte. In tre servizi su sei il `listen` stava
+**prima** dei middleware: funzionava solo perché la valutazione del modulo finisce prima che arrivi
+una richiesta.
+
+**Il rate limit prende opzioni con nome**, non due numeri posizionali: `createRateLimit(60, 60_000)`
+e `createRateLimit(60_000, 60)` compilano entrambe e significano l'opposto. Le due firme
+convivevano davvero — `auth` usava quella posizionale, `cc-api` e `op-api` quella a oggetto.
+
+**`publicCorsPaths` per ciò che è pubblico per natura**, non per distrazione: il JWKS di `auth` sono
+chiavi fatte apposta per essere lette da chiunque. Montati prima dell'allowlist, perché su una
+preflight il middleware CORS chiude la richiesta e un percorso montato dopo non verrebbe raggiunto.
 
 ## Limiti dichiarati
 
@@ -108,3 +123,12 @@ database.
 **Il nome è un confine**: se non riguarda lo strato HTTP di Express, non va qui. Vale anche per i
 quattro frontend Next, che hanno bisogni diversi (middleware di Next, non di Express) e che questa
 libreria esclude apposta.
+
+## Test
+
+```bash
+npm test
+```
+
+Il rate limit ha una suite sua: è l'unico componente con logica non banale, ed è quello il cui
+malfunzionamento non si vede — un limite rotto lascia passare tutto senza dare errore.

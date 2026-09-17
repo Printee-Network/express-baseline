@@ -26,6 +26,18 @@ export type BaselineOptions = {
    * legittimo fallisce e lo si alza consapevolmente), invece che in quella che non si nota mai.
    */
   readonly bodyLimit?: string;
+  /**
+   * Prefissi serviti con CORS **aperto**, montati prima dell'allowlist.
+   *
+   * Per ciò che è pubblico per natura e non per distrazione: il JWKS di `auth` (`/.well-known`)
+   * sono chiavi pubbliche, fatte apposta per essere lette da chiunque. Tenerli dentro l'allowlist
+   * significherebbe elencare ogni consumatore presente e futuro di una risorsa che non ha
+   * consumatori noti.
+   *
+   * L'elenco è esplicito e va scritto: la differenza fra "pubblico" e "aperto per sbaglio" è che
+   * il primo si dichiara.
+   */
+  readonly publicCorsPaths?: readonly string[];
   readonly logger?: Logger;
   /**
    * Hop di proxy di cui fidarsi. Default `1`: su Railway c'è esattamente un reverse proxy davanti.
@@ -70,6 +82,10 @@ export const createBaselineApp = (options: BaselineOptions): BaselineApp => {
   app.use(morgan("combined"));
   app.use(bodyParser.json({ limit: limite }));
   app.use(bodyParser.urlencoded({ extended: true, limit: limite }));
+  // Prima dell'allowlist: per una preflight il middleware CORS chiude la richiesta, quindi un
+  // percorso pubblico montato dopo non verrebbe mai raggiunto.
+  (options.publicCorsPaths ?? []).forEach((percorso) => app.use(percorso, cors()));
+
   app.use(cors(corsAllowlist(origins)));
   app.use("/", healthRouter);
 
@@ -84,7 +100,10 @@ export const createBaselineApp = (options: BaselineOptions): BaselineApp => {
     server.listen(options.port, () => {
       logger.info(
         `[${options.serviceName}] in ascolto sulla porta ${options.port} · body ${limite} · ` +
-          `CORS ${origins.length === 0 ? "chiuso" : origins.join(", ")}`,
+          `CORS ${origins.length === 0 ? "chiuso" : origins.join(", ")}` +
+          (options.publicCorsPaths?.length
+            ? ` · pubblici: ${options.publicCorsPaths.join(", ")}`
+            : ""),
       );
       onReady?.();
     });
