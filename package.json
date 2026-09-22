@@ -1,6 +1,6 @@
 {
   "name": "@printee-network/express-baseline",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Il minimo da cui parte ogni backend Express di Printee: trust proxy, CORS ad allowlist, helmet, rate limit, guardia d'avvio. Centralizza il codice infrastrutturale, non il traffico.",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
