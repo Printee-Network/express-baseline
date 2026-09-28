@@ -1,4 +1,3 @@
-import bodyParser from "body-parser";
 import compression from "compression";
 import cors from "cors";
 import express from "express";
@@ -80,8 +79,9 @@ export const createBaselineApp = (options: BaselineOptions): BaselineApp => {
   app.use(helmet());
   app.use(compression());
   app.use(morgan("combined"));
-  app.use(bodyParser.json({ limit: limite }));
-  app.use(bodyParser.urlencoded({ extended: true, limit: limite }));
+  // I parser inclusi in Express (≥ 4.16): la dipendenza `body-parser` separata non serve.
+  app.use(express.json({ limit: limite }));
+  app.use(express.urlencoded({ extended: true, limit: limite }));
   // Prima dell'allowlist: per una preflight il middleware CORS chiude la richiesta, quindi un
   // percorso pubblico montato dopo non verrebbe mai raggiunto.
   (options.publicCorsPaths ?? []).forEach((percorso) => app.use(percorso, cors()));

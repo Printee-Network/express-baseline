@@ -17,6 +17,7 @@ I sei backend avevano sei implementazioni delle stesse preoccupazioni, divergent
 | `cc-api` | 10mb | ❌ | allowlist |
 | `be-registry` | 50mb | ❌ | allowlist |
 | `cc-be` | 10mb | ❌ | `cors()` aperto |
+| `be` | 50mb | ❌ | allowlist |
 
 Un fattore **800** fra il limite più basso e il più alto, che nessuno ha deciso: è stato ereditato
 per copia. `op-api` è nato dal blueprint di `cc-api` e si è portato dietro `cors: "*"` e un rate
@@ -39,13 +40,10 @@ const { app, listen } = createBaselineApp({
   logger,                                        // il winston del servizio
 });
 
-// ...tutte le rotte...
-
-listen(); // dopo le rotte, mai all'import
-
+// ...tutte le rotte, per esempio:
 app.use("/catalogs", createRateLimit({ max: 60, windowMs: 60_000 }), catalogRouter);
 
-listen();
+listen(); // una volta sola, dopo le rotte, mai all'import
 ```
 
 ### Guardia d'avvio
