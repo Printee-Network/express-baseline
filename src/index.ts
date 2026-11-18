@@ -6,12 +6,14 @@
  * gateway (vedi `PROGETTO_GATEWAY.md`).
  *
  * **Cosa NON c'è dentro, di proposito:**
- * - niente che tocchi Mongo o un database;
+ * - niente che tocchi Mongo o un database (la dismissione di un tenant riceve dal servizio la funzione
+ *   che elimina il database);
  * - nessun tipo di dominio;
  * - `authorize()`, i ruoli e la verifica dei token → stanno in `@printee-network/auth-client`;
  * - la risoluzione del tenant → dipende dai dati, resta nei servizi.
  *
- * Il nome è un confine: se non riguarda lo strato HTTP di Express, non va qui.
+ * Il nome è un confine: se non riguarda lo strato HTTP di Express, non va qui. Unica eccezione, `tenant`:
+ * i pezzi comuni ai servizi con un database per tenant (nome, cache, dismissione), che erano copiati.
  */
 export { createBaselineApp } from "./createBaselineApp";
 export type { BaselineApp, BaselineOptions } from "./createBaselineApp";
@@ -23,3 +25,5 @@ export { regoleComuni, verificaAvvio } from "./bootGuard";
 export type { RegolaAvvio } from "./bootGuard";
 export { consoleLogger } from "./logger";
 export type { Logger } from "./logger";
+export { cacheLru, creaDismissione, DatabaseProtettoError, nomeDelDbTenant, rottaDismissione, verificaEliminabile } from "./tenant";
+export type { DatabaseDiTenant } from "./tenant";

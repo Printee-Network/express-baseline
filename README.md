@@ -69,6 +69,27 @@ verificaAvvio(
 Un bypass acceso non si annuncia: funziona, e funzionando non lascia traccia. Questo lo dichiara a
 ogni avvio.
 
+### Servizi con un database per tenant
+
+```ts
+import { cacheLru, creaDismissione, nomeDelDbTenant, rottaDismissione } from "@printee-network/express-baseline";
+
+export const dbDelTenant = nomeDelDbTenant("svc_");                 // (slug) => "svc_<slug>"
+export const getTenantDb = cacheLru((nome) => new MongoDb(nome));   // al massimo 50 handle
+
+const dismetti = creaDismissione({
+  prefisso: "svc_",
+  riservati: ["svc_registry"],                                       // il database centrale
+  eliminaDatabase: async (nome) => { await (await client).db(nome).dropDatabase(); },
+  logger,
+});
+app.use(rottaDismissione(soloIlRegistro, dismetti, logger));         // DELETE /internal/tenants/:slug
+```
+
+La protezione sta sul **nome** (`verificaEliminabile`): col prefisso, con uno slug, non riservato. Lo
+slug `registry` darebbe proprio il database centrale. Il database lo elimina la funzione del servizio:
+la libreria non tocca Mongo.
+
 ## Scelte che sono parte del contratto
 
 **L'ordine dei middleware.** `helmet` prima di `cors`, così anche le risposte di preflight hanno gli
@@ -113,12 +134,13 @@ database.
 
 ## Cosa NON c'è dentro, di proposito
 
-- niente che tocchi Mongo o un database;
+- niente che tocchi Mongo o un database (la dismissione riceve dal servizio la funzione che elimina);
 - nessun tipo di dominio;
 - `authorize()`, i ruoli e la verifica dei token → `@printee-network/auth-client`;
 - la risoluzione del tenant → dipende dai dati, resta nei servizi.
 
-**Il nome è un confine**: se non riguarda lo strato HTTP di Express, non va qui. Vale anche per i
+**Il nome è un confine**: se non riguarda lo strato HTTP di Express, non va qui (unica eccezione, i
+pezzi comuni ai servizi con un database per tenant). Vale anche per i
 quattro frontend Next, che hanno bisogni diversi (middleware di Next, non di Express) e che questa
 libreria esclude apposta.
 
