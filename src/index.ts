@@ -3,7 +3,7 @@
  *
  * Il minimo da cui parte ogni backend Express di Printee. Centralizza il **codice**
  * infrastrutturale comune, non il **traffico**: nessun hop di rete in più, a differenza di un
- * gateway (vedi `PROGETTO_GATEWAY.md`).
+ * gateway.
  *
  * **Cosa NON c'è dentro, di proposito:**
  * - niente che tocchi Mongo o un database (la dismissione di un tenant riceve dal servizio la funzione

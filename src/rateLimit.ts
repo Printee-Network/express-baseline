@@ -6,11 +6,10 @@ type Finestra = { count: number; resetAt: number };
 /**
  * Limite a finestra fissa per client.
  *
- * Funziona **solo se `trust proxy` è attivo**, altrimenti dietro il proxy di Railway `req.ip` è
- * l'IP del proxy — uguale per tutti — e il limite per-client diventa un bucket globale: un utente
- * attivo fa scattare il 429 per chiunque. È il finding #4 di `report-sicurezza.md`, aperto in
- * cinque servizi su sei. `createBaselineApp` imposta `trust proxy` **prima** di qualsiasi rotta,
- * così i due pezzi non possono più essere montati separatamente.
+ * Funziona **solo se `trust proxy` è attivo**, altrimenti dietro un reverse proxy `req.ip` è l'IP
+ * del proxy — uguale per tutti — e il limite per-client diventa un bucket globale: un utente attivo
+ * fa scattare il 429 per chiunque. `createBaselineApp` imposta `trust proxy` **prima** di qualsiasi
+ * rotta, così i due pezzi non possono più essere montati separatamente.
  *
  * ⚠️ **`req.ip` non è sempre un identificatore stabile.** Dipende da quanti hop di proxy ci sono
  * davvero fra il client e il processo, e quel numero lo decide il provider, non il codice: con un

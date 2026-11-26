@@ -28,7 +28,7 @@ export type BaselineOptions = {
   /**
    * Prefissi serviti con CORS **aperto**, montati prima dell'allowlist.
    *
-   * Per ciò che è pubblico per natura e non per distrazione: il JWKS di `auth` (`/.well-known`)
+   * Per ciò che è pubblico per natura e non per distrazione: il JWKS di un IdP (`/.well-known`)
    * sono chiavi pubbliche, fatte apposta per essere lette da chiunque. Tenerli dentro l'allowlist
    * significherebbe elencare ogni consumatore presente e futuro di una risorsa che non ha
    * consumatori noti.
@@ -39,7 +39,8 @@ export type BaselineOptions = {
   readonly publicCorsPaths?: readonly string[];
   readonly logger?: Logger;
   /**
-   * Hop di proxy di cui fidarsi. Default `1`: su Railway c'è esattamente un reverse proxy davanti.
+   * Hop di proxy di cui fidarsi. Default `1`: un reverse proxy davanti, il caso delle piattaforme
+   * di hosting.
    * Alzarlo senza averne uno vero significa fidarsi di un `X-Forwarded-For` che il client scrive.
    */
   readonly trustProxy?: number | boolean;
@@ -62,9 +63,8 @@ export type BaselineApp = {
  * risposte di preflight devono avere gli header di sicurezza; i body parser dopo il logging perché
  * una richiesta rifiutata per dimensione deve comunque comparire nei log.
  *
- * **`trust proxy` è impostato qui**, non lasciato al servizio: separarlo dal rate limit è ciò che
- * ha prodotto il finding #4 in cinque servizi su sei — il limite c'era, la condizione perché
- * funzionasse no.
+ * **`trust proxy` è impostato qui**, non lasciato al servizio: separato dal rate limit, il limite
+ * c'è ma manca la condizione perché funzioni.
  */
 export const createBaselineApp = (options: BaselineOptions): BaselineApp => {
   const logger = options.logger ?? consoleLogger;
@@ -92,8 +92,8 @@ export const createBaselineApp = (options: BaselineOptions): BaselineApp => {
   /**
    * L'ascolto è esplicito e **non parte all'import**.
    *
-   * In `cc-api` il `server.listen` sta prima della registrazione dei middleware: funziona solo
-   * perché la valutazione del modulo finisce prima che arrivi una richiesta. Qui il servizio decide
+   * Un `server.listen` scritto prima della registrazione dei middleware funziona solo perché la
+   * valutazione del modulo finisce prima che arrivi una richiesta. Qui il servizio decide
    * quando è pronto — dopo aver caricato le chiavi, connesso il database, montato le rotte.
    */
   const listen = (onReady?: () => void): void => {

@@ -30,7 +30,7 @@ export const verificaAvvio = (
 
 /**
  * Regole comuni a tutti i servizi. Un servizio le compone con le proprie invece di riscriverle:
- * `verificaAvvio([...regoleComuni({...}), ...mieRegole], logger, "[CC-API]")`.
+ * `verificaAvvio([...regoleComuni({...}), ...mieRegole], logger, "[SERVIZIO]")`.
  */
 export const regoleComuni = (contesto: {
   readonly isProduction: boolean;

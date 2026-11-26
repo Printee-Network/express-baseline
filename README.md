@@ -4,25 +4,15 @@ Il minimo da cui parte ogni backend Express di Printee: `trust proxy`, CORS ad a
 rate limit, guardia d'avvio, `/health`.
 
 **Centralizza il codice infrastrutturale comune, non il traffico.** A differenza di un gateway non
-aggiunge nessun hop di rete — le ragioni della scelta stanno in `PROGETTO_GATEWAY.md`.
+aggiunge nessun hop di rete.
 
 ## Perché esiste
 
-I sei backend avevano sei implementazioni delle stesse preoccupazioni, divergenti:
-
-| | limite body | `trust proxy` | CORS |
-|---|---|---|---|
-| `auth` | 64kb | ✅ | allowlist |
-| `op-api` | 256kb | ❌ | allowlist |
-| `cc-api` | 10mb | ❌ | allowlist |
-| `be-registry` | 50mb | ❌ | allowlist |
-| `cc-be` | 10mb | ❌ | `cors()` aperto |
-| `be` | 50mb | ❌ | allowlist |
-
-Un fattore **800** fra il limite più basso e il più alto, che nessuno ha deciso: è stato ereditato
-per copia. `op-api` è nato dal blueprint di `cc-api` e si è portato dietro `cors: "*"` e un rate
-limit senza `trust proxy` — cioè un limite per-IP che dietro un proxy diventa un bucket globale
-(`report-sicurezza.md` #4, aperto in cinque servizi su sei).
+Ogni backend aveva la sua implementazione delle stesse preoccupazioni, e le implementazioni
+divergevano: limiti del corpo fra 64kb e 50mb che nessuno aveva deciso, `trust proxy` assente quasi
+ovunque, CORS ad allowlist in alcuni servizi e aperto in altri. Erano stati ereditati per copia da un
+servizio al successivo, insieme ai difetti: un rate limit senza `trust proxy` è un limite per-IP che
+dietro un proxy diventa un bucket globale.
 
 L'obiettivo è che **la sicurezza non dipenda dalla memoria di chi crea il prossimo microservizio.**
 
@@ -32,8 +22,8 @@ L'obiettivo è che **la sicurezza non dipenda dalla memoria di chi crea il pross
 import { createBaselineApp, createRateLimit } from "@printee-network/express-baseline";
 
 const { app, listen } = createBaselineApp({
-  serviceName: "CC-API",
-  port: 5100,
+  serviceName: "SERVIZIO",
+  port: 3000,
   corsAllowedOrigins: config.corsAllowedOrigins, // vuoto = nessuna origin browser
   bodyLimit: "256kb",                            // default 64kb
   publicCorsPaths: ["/public"],                  // pubblici per natura, fuori dall'allowlist
@@ -62,7 +52,7 @@ verificaAvvio(
     },
   ],
   logger,
-  "[CC-API]",
+  "[SERVIZIO]",
 );
 ```
 
@@ -96,8 +86,8 @@ la libreria non tocca Mongo.
 header di sicurezza; i body parser dopo il logging, così una richiesta rifiutata per dimensione
 compare comunque nei log.
 
-**`trust proxy` è impostato qui**, non lasciato al servizio. Separarlo dal rate limit è ciò che ha
-prodotto il finding #4: il limite c'era, la condizione perché funzionasse no.
+**`trust proxy` è impostato qui**, non lasciato al servizio. Separarlo dal rate limit significa avere
+il limite senza la condizione perché funzioni.
 
 **CORS chiuso di default**, e `origin: "*"` non è esprimibile. Un'allowlist vuota significa "nessuna
 origin browser", che è la risposta giusta per un servizio chiamato server-to-server. Le richieste
@@ -109,15 +99,14 @@ subito — un upload legittimo fallisce e lo si alza consapevolmente — invece 
 nota mai.
 
 **`listen()` è esplicito e non parte all'import.** Il servizio decide quando è pronto: dopo aver
-caricato le chiavi, connesso il database, montato le rotte. In tre servizi su sei il `listen` stava
-**prima** dei middleware: funzionava solo perché la valutazione del modulo finisce prima che arrivi
-una richiesta.
+caricato le chiavi, connesso il database, montato le rotte. Un `listen` scritto **prima** dei middleware
+funziona solo perché la valutazione del modulo finisce prima che arrivi una richiesta.
 
 **Il rate limit prende opzioni con nome**, non due numeri posizionali: `createRateLimit(60, 60_000)`
 e `createRateLimit(60_000, 60)` compilano entrambe e significano l'opposto. Le due firme
-convivevano davvero — `auth` usava quella posizionale, `cc-api` e `op-api` quella a oggetto.
+convivevano davvero, in servizi diversi.
 
-**`publicCorsPaths` per ciò che è pubblico per natura**, non per distrazione: il JWKS di `auth` sono
+**`publicCorsPaths` per ciò che è pubblico per natura**, non per distrazione: il JWKS di un IdP sono
 chiavi fatte apposta per essere lette da chiunque. Montati prima dell'allowlist, perché su una
 preflight il middleware CORS chiude la richiesta e un percorso montato dopo non verrebbe raggiunto.
 
@@ -141,7 +130,7 @@ database.
 
 **Il nome è un confine**: se non riguarda lo strato HTTP di Express, non va qui (unica eccezione, i
 pezzi comuni ai servizi con un database per tenant). Vale anche per i
-quattro frontend Next, che hanno bisogni diversi (middleware di Next, non di Express) e che questa
+frontend Next, che hanno bisogni diversi (middleware di Next, non di Express) e che questa
 libreria esclude apposta.
 
 ## Test
@@ -150,5 +139,6 @@ libreria esclude apposta.
 npm test
 ```
 
-Il rate limit ha una suite sua: è l'unico componente con logica non banale, ed è quello il cui
-malfunzionamento non si vede — un limite rotto lascia passare tutto senza dare errore.
+Hanno una suite il rate limit, il cui malfunzionamento non si vede (un limite rotto lascia passare
+tutto senza dare errore), e la protezione della dismissione, che decide quale database si può
+eliminare.

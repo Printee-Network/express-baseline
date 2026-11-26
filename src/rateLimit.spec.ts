@@ -35,7 +35,7 @@ describe("createRateLimit", () => {
 
     // Due client diversi hanno finestre diverse: è ciò che `trust proxy` rende possibile.
     // Senza, dietro un reverse proxy entrambi avrebbero l'IP del proxy e il secondo sarebbe
-    // rifiutato — il bucket globale del report #4.
+    // rifiutato: il limite diventerebbe un bucket globale.
     expect(next).toHaveBeenCalledTimes(2);
   });
 
