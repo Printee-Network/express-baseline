@@ -45,10 +45,10 @@ verificaAvvio(
   [
     ...regoleComuni({ isProduction, allowDebug, corsAllowedOrigins }),
     {
-      nome: "slug-header",
-      attiva: () => !isProduction && process.env.ALLOW_SLUG_HEADER_AUTH === "true",
+      nome: "codice-nel-log",
+      attiva: () => !isProduction && process.env.ALLOW_DEV_CODE_LOG === "true",
       livello: "warn",
-      messaggio: "ALLOW_SLUG_HEADER_AUTH attivo: il tenant può essere dichiarato in un header non autenticato.",
+      messaggio: "ALLOW_DEV_CODE_LOG attivo: i codici di conferma finiscono nel log invece di essere inviati.",
     },
   ],
   logger,
