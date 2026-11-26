@@ -121,6 +121,12 @@ La **`/health` risponde 200 e basta**: non tocca il database. Una health che con
 trasforma un'indisponibilità del database in un riavvio del servizio, e un riavvio non ripara un
 database.
 
+Le health **dichiarano di essere aperte**: il controllo d'avvio dei servizi (`verificaRotte` di
+`@printee-network/auth-client`) vuole su ogni rotta una dichiarazione di chi è ammesso. Il segno è
+`Symbol.for("@printee-network/dichiarazione")` (esportato come `SEGNO_DICHIARAZIONE`), globale per nome: questa
+libreria lo mette senza dipendere da `auth-client`. La rotta di dismissione riceve il guard dal servizio, che la
+dichiara con il suo.
+
 ## Cosa NON c'è dentro, di proposito
 
 - niente che tocchi Mongo o un database (la dismissione riceve dal servizio la funzione che elimina);
